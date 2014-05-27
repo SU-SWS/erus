@@ -34,8 +34,13 @@ abstract class erusPlugin implements erusPluginInterface {
    * [set_data description]
    * @param [type] $settings [description]
    */
-  public function set_data($data) {
+  public function set_data($data, $sanitize = TRUE) {
     $this->data = $data;
+
+    if ($sanitize) {
+      $this->sanitize_data();
+    }
+
     $this->set_info($data['info']);
   }
 
@@ -45,6 +50,17 @@ abstract class erusPlugin implements erusPluginInterface {
    */
   protected function get_data() {
     return $this->data;
+  }
+
+  /**
+   * Remove status information from data array
+   */
+  protected function sanitize_data() {
+    $data = $this->get_data();
+    unset($data['project_status']);
+    unset($data['status']);
+    unset($data['reason']);
+    $this->set_data($data, FALSE);
   }
 
   /**
@@ -146,9 +162,10 @@ abstract class erusPlugin implements erusPluginInterface {
       'type' => 'module',
       'api_version' => '7.x',
       'recommended_major' => '1',
-      'supported_majors' => '1',
+      'supported_majors' => '1', // eg: 1,2,3 || 1,2 || 3
       'default_major' => '1',
-      'project_status' => 'published',
+      'dev_version' => null,
+      'project_status' => '', // published, insecure, revoked, unpublished, not-fetched
       'link' => '',
       'terms' => '',
       'releases' => array(
