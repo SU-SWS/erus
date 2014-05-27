@@ -1,0 +1,254 @@
+<?php
+/**
+ * @file
+ * Allows communication with external respository hosts in order to provide
+ * update information to modules and features.
+ * @author [author] <[email]>
+ * @author [author] <[email]>
+ */
+
+
+/**
+ * Implements hook_help().
+ */
+function erus_help($path, $arg) {
+  switch ($path) {
+    // Main module help for the block module
+    /*
+     *case 'admin/help#block':
+     *  return '<p>' . t('Blocks are boxes of content rendered into an area, or region, of a web page. The default theme Bartik, for example, implements the regions "Sidebar first", "Sidebar second", "Featured", "Content", "Header", "Footer", etc., and a block may appear in any one of these areas. The <a href="@blocks">blocks administration page</a> provides a drag-and-drop interface for assigning a block to a region, and for controlling the order of blocks within regions.', array('@blocks' => url('admin/structure/block'))) . '</p>';
+     */
+    case 'erus':
+      return '<p>' . t('Help Text Goes Here.') . '</p>';
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function erus_menu() {
+
+  $items = array();
+
+  $items['admin/config/administration/erus'] = array(
+    'title' => 'ERUS Configuration',
+    'description' => 'Configure the external repository update status module.',
+    'file' => 'erus.admin.php',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('erus_configuration_form'),
+    'access arguments' => array('configure erus'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function erus_permission() {
+  return array(
+    'configure erus' =>  array(
+      'title' => t('Configure Erus'),
+      'description' => t('Configure External Repository Update Status Settings'),
+    ),
+  );
+}
+
+// -----------------------------------------------------------------------------
+// UPDATE MODULE API HOOKS
+// -----------------------------------------------------------------------------
+
+/**
+ * Implements hook_update_projects_alter().
+ */
+function erus_update_projects_alter(&$projects) {
+  // Lets lighten the load of the update status module by unsetting any module
+  // that has an external repository set as it's source for update information.
+
+  // @TODO: this in a way it doesnt kill the status alter.
+
+}
+
+/**
+ * Implements hook_update_status_alter().
+ */
+function erus_update_status_alter(&$projects) {
+
+  // Loop through each project to see if there is a project that failed to get
+  // update status and see if it has erus settings. If it does, check external.
+  foreach ($projects as $module_name => $data) {
+    if (isset($data['status']) && $data['status'] == UPDATE_UNKNOWN) {
+      if (erus_check_for_settings($module_name, $data)) {
+        try {
+          $erus_data = erus_check_update_status($module_name, 'module', $data);
+        }
+        catch (Exception $e) {
+          watchdog('erus', 'Could not get project updates status information for: ' . $module_name, array(), WATCHDOG_ERROR);
+        }
+        if ($erus_data) {
+          $projects[$module_name] = $erus_data;
+        }
+      }
+    }
+  }
+
+}
+
+/**
+ * Implements hook_verify_update_archive().
+ */
+function erus_verify_update_archive($project, $archive_file, $directory) {
+  $what = "this";
+}
+
+// -----------------------------------------------------------------------------
+// END UPDATE MODULE API HOOKS
+// -----------------------------------------------------------------------------
+
+/**
+ * Checks info file settings for erus config
+ * @return [mixed]  false if no data,
+ */
+function erus_check_for_settings($machine_name, &$data, $type = 'module') {
+
+  $info_path = drupal_get_path($type, $machine_name) . '/' . $machine_name . ".info";
+  $info = drupal_parse_info_file($info_path);
+
+  if (!$info) {
+    return FALSE;
+  }
+
+  if (!isset($info['erus']) || !is_array($info['erus'])) {
+    return FALSE;
+  }
+
+  if (!isset($info['erus']['plugin'])) {
+    return FALSE;
+  }
+
+  $data['info'] = array_merge($data['info'], $info);
+
+  return TRUE;
+}
+
+/**
+ * Uses the erus plugin defined in the .info file to check for an update status.
+ * @param  [string] $machine_name The modules machine name
+ * @param  [string] $type         Either 'module' or 'theme'
+ * @param  [array] $data          *optional* The current update status
+ *                                information
+ * @return [type]                 An array of update status information.
+ *                                See hook_update_status_alter
+ */
+function erus_check_update_status($machine_name, $type = 'module', $data = NULL) {
+
+  // If info already provided lets use that otherwise go get it.
+  if (!isset($data['info']['erus'])) {
+    $info_path = drupal_get_path($type, $machine_name) . '/' . $machine_name . ".info";
+    $data['info'] = drupal_parse_info_file($info_path);
+  }
+
+  // If we still do not have the information throw up.
+  if (!$data['info']) {
+    throw new Exception("Could not process project info file.");
+  }
+
+  // Check to see that the .info file has a erus plugin defined.
+  if (!isset($data['info']['erus']['plugin'])) {
+    throw new Exception("No erus plugin defined in .info file for " . $machine_name);
+  }
+
+  // Try to load the plugin.
+  $plugin = erus_load_erus_plugin($data['info']['erus']['plugin']);
+  if (!$plugin) {
+    throw new Exception("Could not load Erus plugin: " . $data['info']['erus']['plugin']);
+  }
+
+  // Pass in the erus information and let the plugin do its magic.
+  $plugin->set_data($data);
+  $data = $plugin->process();
+
+  return $data;
+}
+
+// -----------------------------------------------------------------------------
+// PLUGINS
+// -----------------------------------------------------------------------------
+
+/**
+ * Gets all the plugin information available.
+ * @return [array] an array of plugin information
+ */
+function erus_get_erus_plugin_info() {
+  static $drupal_static_fast;
+  if (!isset($drupal_static_fast['erus_get_erus_plugin_info'])) {
+    $drupal_static_fast['erus_get_erus_plugin_info'] = &drupal_static(__FUNCTION__);
+  }
+  $plugins = &$drupal_static_fast['erus_get_erus_plugin_info'];
+
+  if (is_array($plugins) && !empty($plugins)) {
+    return $plugins;
+  }
+
+  $plugins = array();
+
+  foreach (module_implements('erus_plugin_info') as $module_name) {
+    $func = $module_name . "_erus_plugin_info";
+    $data = $func();
+
+    if (!is_array($data)) {
+      throw new Exception("Bad data from $module_name to hook_erus_plugin_info");
+    }
+
+    $plugins = array_merge($plugins, $data);
+  }
+
+  // Allow others to alter this.
+  drupal_alter('erus_plugin_info', $plugins);
+
+  return $plugins;
+}
+
+/**
+ * Implement my own hook. See erus_get_erus_plugin_info();
+ * @return [array] an array of plugin information
+ */
+function erus_erus_plugin_info() {
+  $plugins = array();
+  /**
+   * GitHubbery
+   */
+  $plugins['github'] = array(
+    'file' => 'plugins/erusGithub.inc',
+    'name' => 'erusGithub',
+    'module' => 'erus',
+  );
+
+  return $plugins;
+}
+
+/**
+ * Loads and retuns an erus plugin.
+ * @param  [string] $plugin_name the erus plugin name as defined in .info
+ * @return [mixed] either false if anything goes wrong or an instantiated plugin
+ */
+function erus_load_erus_plugin($plugin_name) {
+
+  $plugins = erus_get_erus_plugin_info();
+
+  if (!isset($plugins[$plugin_name])) {
+    return FALSE;
+  }
+
+  include_once drupal_get_path('module', $plugins[$plugin_name]['module']) . '/' . $plugins[$plugin_name]['file'];
+  $plugin = new $plugins[$plugin_name]['name']();
+
+  return $plugin;
+}
+
+// -----------------------------------------------------------------------------
+// END PLUGINS
+// -----------------------------------------------------------------------------
+
+
