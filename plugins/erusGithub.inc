@@ -12,17 +12,21 @@ class erusGithub extends erusPlugin {
   /**
    * Set the github api endpoint
    */
-  public function __construct() {
+  public function __construct($settings) {
+    parent::__construct($settings);
     $this->set_endpoint('https://api.github.com/repos/{account}/{project}');
   }
 
   /**
    * The Magic Happens.
+   * @param  $data  [description]
    * @return [type] [description]
    */
-  public function process() {
-    $data = $this->get_data();
-    $info = $this->get_info();
+  public function process($data) {
+
+    // Store data for later
+    $this->set_update_data($data);
+
     $client = $this->get_client();
     $request = $client->get('releases');
     $response = $request->send();
@@ -45,6 +49,8 @@ class erusGithub extends erusPlugin {
     $releases = $github_data;
     // Convert GH data into update modules data.
     $available = $this->map_data($releases);
+    // Sanitize the status of the data from the original call
+    $this->sanitize_info_data($data);
     // Allow update module to do its magic.
     update_calculate_project_update_status($this->get_project_name(), $data, $available);
 
@@ -63,10 +69,9 @@ class erusGithub extends erusPlugin {
   protected function get_client() {
 
     $end = $this->get_endpoint();
-    $info = $this->get_info();
 
     $client = new Guzzle\Http\Client($end, array(
-      'account' => $info['erus']['account'],
+      'account' => $this->get_account(),
       'project' => $this->get_project_name(),
     ),
     array(
@@ -82,49 +87,87 @@ class erusGithub extends erusPlugin {
    * @return [type]                 [description]
    */
   protected function map_data($releases) {
-    $real_data = $this->get_data();
+    $update_data = $this->get_update_data();
     $data = $this->get_default_update_status_available_data_array();
-    $latest_release = array_shift($releases);
-    $tag_name = $latest_release['tag_name'];
+    $latest_release = $this->get_latest_release($releases);
+    $latest_prod_tag = !empty($latest_release['tag_name']) ? $latest_release['tag_name'] : '';
 
-    $data['title'] =                $real_data['info']['name'];
-    $data['short_name'] =           $real_data['name'];
-    $data['type'] =                 $real_data['project_type'];
-    $data['recommended_major'] =    $this->parse_latest_major($tag_name);
-    $data['supported_majors'] =     $this->parse_latest_major($tag_name);
-    $data['default_major'] =        $this->parse_latest_major($tag_name);
-    $data['dev_version'] =          $latest_release['target_commitish'];
-    $data['link'] =                 $latest_release['html_url'];
+    $data['title'] =                $update_data['info']['name'];
+    $data['short_name'] =           $update_data['name'];
+    //$data['type'] =                 $update_data['project_type'];
+    $data['link'] =                 $this->get_project_url($latest_release);
     $data['last_fetch'] =           time();
-    // $data['recommended'] =          $tag_name;
-    // $data['latest_version'] =       $tag_name;
-    // $data['install_type'] =         ''; // 'dev', 'official'
 
-    // add the latest back into the array.
-    array_unshift($releases, $latest_release);
+    $data['recommended_major'] =    $this->parse_latest_major($latest_prod_tag);
+    $data['supported_majors'] =     implode(",", range(1,99));
+    $data['default_major'] =        $this->parse_latest_major($latest_prod_tag);
+
     foreach ($releases as $index => $release) {
       $tag_name = $release['tag_name'];
       $tag_parts = explode('-', $tag_name);
 
       $data['releases'][$tag_name] =  array(
-        'name' => $real_data['name'] . ' ' . $tag_name,
+        'name' => $update_data['name'] . ' ' . $tag_name,
         'version' => $tag_name,
         'tag' => $tag_name,
         'version_major' => $this->parse_latest_major($tag_name),
         'version_patch' => 0,
-        'version_extra' => (isset($tag_parts[2])) ? $tag_parts[2] : '',
+        'version_extra' => ($release['prerelease']) ? 'dev' : $tag_parts[2],
         'status' => 'published',
         'release_link' => $release['html_url'],
         'download_link' => $release['tarball_url'],
-        'date' => strtotime($release['published_at']),
-        'mdhash' => md5($release['url']),
-        'filesize' => 0,
+        //'date' => strtotime($release['published_at']), // when the release was published.
+        'date' => strtotime($release['created_at']), // when the tag was created
+        'mdhash' => md5($release['url']), // just making this stuff up.
+        'filesize' => isset($release['assets'][0]) ? $release['assets'][0]->size : 0,
+        'files' => "\n  \n  \n  ",
+        'terms' => array('Release type' => array('Bug fixes')),
       );
+
     }
 
-
-
     return $data;
+  }
+
+  /**
+   * Goes through the releases looking for a release that isnt marked as
+   * a "pre-lease" in the github ui.
+   * @param  [array] $releases [all of the releases from GH]
+   * @return [array]           [the latest mared as non prerelease]
+   */
+  protected function get_latest_release($releases) {
+
+    foreach ($releases as $i => $release) {
+      if ($release['draft'] == TRUE || $release['prerelease'] == TRUE) {
+        continue;
+      }
+      return $release;
+    }
+
+  }
+
+  /**
+   * Looks for the latest tag marked with pre-release
+   * @param  [type] $releases [description]
+   * @return [type]           [description]
+   */
+  protected function get_latest_dev_release($releases) {
+    foreach ($releases as $i => $release) {
+      if ($release['prerelease'] == TRUE) {
+        return $release;
+      }
+    }
+  }
+
+  /**
+   * Return a link to the github page.
+   * @param  [type] $releases [description]
+   * @return [type]           [description]
+   */
+  protected function get_project_url($release) {
+    $bits = parse_url($release['html_url']);
+    $its_n_bits = explode("/", ltrim($bits['path'], "/"));
+    return $bits['scheme'] . "://" . $bits['host'] . "/" . $its_n_bits[0] . "/" . $its_n_bits[1];
   }
 
 }

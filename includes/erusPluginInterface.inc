@@ -10,6 +10,6 @@ interface erusPluginInterface {
    * @param  array $settings Erus settings
    * @return array drupal update status array
    */
-  public function process();
+  public function process($data);
 
 }

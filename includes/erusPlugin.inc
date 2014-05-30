@@ -8,75 +8,67 @@ use Guzzle\Http\Client;
 
 abstract class erusPlugin implements erusPluginInterface {
 
-  protected $response = null;
   protected $storage = array();
-  protected $info = array();
-  protected $data = array();
   protected $client = null;
   protected $endpoint = null;
+  protected $settings = array();
+  protected $update_data = array();
 
   /**
    * [__construct description]
    */
-  public function __construct() {
-
+  public function __construct($settings) {
+    $this->set_settings($settings);
   }
 
   /**
    * The meat
+   * @param  $data  [description]
    * @return [type]           [description]
    */
-  public function process() {
+  public function process($data) {
     // You need to override this one.
   }
 
   /**
-   * [set_data description]
-   * @param [type] $settings [description]
+   * [set_update_data description]
+   * @param [type] $data [description]
    */
-  public function set_data($data, $sanitize = TRUE) {
-    $this->data = $data;
-
-    if ($sanitize) {
-      $this->sanitize_data();
-    }
-
-    $this->set_info($data['info']);
+  protected function set_update_data($data) {
+    $this->update_data = $data;
   }
 
   /**
-   * [get_data description]
+   * [get_update_data description]
    * @return [type] [description]
    */
-  protected function get_data() {
-    return $this->data;
+  protected function get_update_data() {
+    return $this->update_data;
+  }
+
+  /**
+   * Setter
+   * @param [type] $set [description]
+   */
+  protected function set_settings($set) {
+    $this->settings = $set;
+  }
+
+  /**
+   * Getter
+   * @return [type] [description]
+   */
+  protected function get_settings() {
+    return $this->settings;
   }
 
   /**
    * Remove status information from data array
    */
-  protected function sanitize_data() {
-    $data = $this->get_data();
+  protected function sanitize_info_data(&$data) {
     unset($data['project_status']);
     unset($data['status']);
     unset($data['reason']);
-    $this->set_data($data, FALSE);
-  }
-
-  /**
-   * [set_info description]
-   * @param [type] $settings [description]
-   */
-  public function set_info($info) {
-    $this->info = $info;
-  }
-
-  /**
-   * [get_info description]
-   * @return [type] [description]
-   */
-  protected function get_info() {
-    return $this->info;
   }
 
   /**
@@ -132,23 +124,17 @@ abstract class erusPlugin implements erusPluginInterface {
    * @return [type] [description]
    */
   protected function get_project_name() {
-    $info = $this->get_info();
+    $settings = $this->get_settings();
+    return $settings['project'];
+  }
 
-    // If there is an erus override use that.
-    if (isset($info['erus']['project'])) {
-      return $info['erus']['project'];
-    }
-
-    // If there this a project name in the .info use that
-    if (isset($info['project'])) {
-      return $info['project'];
-    }
-
-    // Last ditch effort, create a name out of the name.
-    $filter = array(' ' => '_', '/' => '_', '[' => '_', ']' => '');
-    $name = strtolower($info['name']);
-
-    return drupal_clean_css_identifier($name, $filter);
+  /**
+   * [get_account description]
+   * @return [type] [description]
+   */
+  protected function get_account() {
+    $settings = $this->get_settings();
+    return $settings['account'];
   }
 
   /**
@@ -159,13 +145,13 @@ abstract class erusPlugin implements erusPluginInterface {
     return array(
       'title' => '',
       'short_name' => '',
-      'type' => 'module',
+      'type' => 'project_module',
       'api_version' => '7.x',
       'recommended_major' => '1',
       'supported_majors' => '1', // eg: 1,2,3 || 1,2 || 3
       'default_major' => '1',
       'dev_version' => null,
-      'project_status' => '', // published, insecure, revoked, unpublished, not-fetched
+      'project_status' => 'published', // published, insecure, revoked, unpublished, not-fetched
       'link' => '',
       'terms' => '',
       'releases' => array(
