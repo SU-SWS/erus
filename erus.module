@@ -80,9 +80,9 @@ function erus_update_status_alter(&$projects) {
   foreach ($projects as $module_name => $data) {
     if (isset($data['status']) &&
       ($data['status'] == UPDATE_UNKNOWN || $data['status'] == UPDATE_NOT_FETCHED)) {
-      if (erus_check_for_settings($module_name)) {
+      if (erus_check_for_settings($module_name, $data['project_type'])) {
         try {
-          $erus_data = erus_check_update_status($module_name, 'module', $data);
+          $erus_data = erus_check_update_status($module_name, $data['project_type'], $data);
           if (is_array($erus_data)) {
             $projects[$module_name] = $erus_data;
           }

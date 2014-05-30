@@ -1,5 +1,7 @@
 {
     "require": {
-        "guzzlehttp/guzzle": "~3.7.4"
-    }
+        "guzzlehttp/guzzle": "~3.7.4",
+        "knplabs/github-api": "*"
+    },
+    "minimum-stability": "dev"
 }

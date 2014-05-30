@@ -69,13 +69,15 @@ class erusGithub extends erusPlugin {
   protected function get_client() {
 
     $end = $this->get_endpoint();
+    $this->auth_user_with_github();
+    $headers = array('Accept' => 'application/vnd.github.v3+json');
 
     $client = new Guzzle\Http\Client($end, array(
       'account' => $this->get_account(),
       'project' => $this->get_project_name(),
     ),
     array(
-      'headers' => array('Accept' => 'application/vnd.github.v3+json'),
+      'headers' => $headers,
     ));
 
     return $client;
@@ -169,5 +171,15 @@ class erusGithub extends erusPlugin {
     $its_n_bits = explode("/", ltrim($bits['path'], "/"));
     return $bits['scheme'] . "://" . $bits['host'] . "/" . $its_n_bits[0] . "/" . $its_n_bits[1];
   }
+
+  /**
+   * Returns authentication credentials for GH
+   * @return [type] [description]
+   */
+  protected function get_auth_credentials() {
+
+  }
+
+
 
 }

@@ -7,6 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Symfony\\Component\\EventDispatcher\\' => array($vendorDir . '/symfony/event-dispatcher'),
-    'Guzzle\\Tests' => array($vendorDir . '/guzzlehttp/guzzle/tests'),
-    'Guzzle' => array($vendorDir . '/guzzlehttp/guzzle/src'),
+    'Guzzle\\Tests' => array($vendorDir . '/guzzlehttp/guzzle/tests', $vendorDir . '/guzzle/guzzle/tests'),
+    'Guzzle' => array($vendorDir . '/guzzlehttp/guzzle/src', $vendorDir . '/guzzle/guzzle/src'),
+    'Github\\' => array($vendorDir . '/knplabs/github-api/lib'),
 );
