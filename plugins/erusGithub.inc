@@ -12,13 +12,6 @@ use \Github\Client as GithubClient;
 class erusGithub extends erusPlugin {
 
   /**
-   * Set the github api endpoint
-   */
-  public function __construct($settings) {
-    parent::__construct($settings);
-  }
-
-  /**
    * Configuration form for the plugin.
    * @return [type] [description]
    */

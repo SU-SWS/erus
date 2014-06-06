@@ -17,7 +17,7 @@ function erus_admin_config_administration_erus() {
   $rows = array();
 
   foreach ($plugins as $plugin_name => $values) {
-    $row = array($plugin_name, $values['module'], l('edit', 'admin/config/administration/erus/' . $plugin_name . '/edit'));
+    $row = array($plugin_name, $values['module'], l('edit', 'admin/config/administration/erus/' . $plugin_name));
     $rows[] = $row;
   }
 

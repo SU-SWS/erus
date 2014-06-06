@@ -41,7 +41,7 @@ function erus_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
-  $items['admin/config/administration/erus/%/edit'] = array(
+  $items['admin/config/administration/erus/%'] = array(
     'title' => 'ERUS Plugin Configuration',
     'description' => 'Configure a particular plugin.',
     'file' => 'erus.admin.php',
@@ -112,9 +112,7 @@ function erus_update_status_alter(&$projects) {
 /**
  * Implements hook_verify_update_archive().
  */
-function erus_verify_update_archive($project, $archive_file, $directory) {
-  $what = "this";
-}
+function erus_verify_update_archive($project, $archive_file, $directory) {}
 
 // -----------------------------------------------------------------------------
 // END UPDATE MODULE API HOOKS

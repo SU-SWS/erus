@@ -147,6 +147,10 @@ abstract class erusPlugin implements erusPluginInterface {
    * @return [type] [description]
    */
   protected function get_client() {
+    if (in_null($this->client)) {
+      $client = new GuzzleClient();
+      $this->set_client($client);
+    }
     return $this->client;
   }
 
