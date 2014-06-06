@@ -13,6 +13,7 @@ abstract class erusPlugin implements erusPluginInterface {
   protected $endpoint = null;
   protected $settings = array();
   protected $update_data = array();
+  protected $plugin_name = null;
 
   /**
    * [__construct description]
@@ -28,6 +29,52 @@ abstract class erusPlugin implements erusPluginInterface {
    */
   public function process($data) {
     // You need to override this one.
+  }
+
+  /**
+   * This function is called for the configuration form page.
+   * Declare this in your plugin class to have it work.
+   * @return [type] [description]
+   */
+  public function get_configuration_form() {
+
+    /**
+     * eg:
+     *
+     * $form = array();
+     * $form['username'] = array(
+     *  '#type' => 'text',
+     *  '#title' => 'GitHub Username',
+     *  ...
+     *
+     * return $form;
+     */
+
+    return FALSE;
+  }
+
+  /**
+   * Gets the settings from the configuration form page.
+   * @return array
+   */
+  public function get_configuration_settings() {
+    $plugin_name = $this->get_plugin_name();
+    return variable_get('erus_' . $plugin_name, array());
+  }
+
+  /**
+   * [get_plugin_name description]
+   * @return [type] [description]
+   */
+  public function get_plugin_name() {
+    return $this->plugin_name;
+  }
+
+  /**
+   * [set_plugin_name description]
+   */
+  public function set_plugin_name($name) {
+    $this->plugin_name = $name;
   }
 
   /**

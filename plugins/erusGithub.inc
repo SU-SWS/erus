@@ -19,6 +19,28 @@ class erusGithub extends erusPlugin {
   }
 
   /**
+   * Configuration form for the plugin.
+   * @return [type] [description]
+   */
+  public function get_configuration_form() {
+    $form = array();
+
+    $form['username'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Username'),
+      '#description' => t('Enter your GitHub username'),
+    );
+
+    $form['password'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Password'),
+      '#description' => t('Enter your GitHub password. WARNING: Password is stored in plain text.'),
+    );
+
+    return $form;
+  }
+
+  /**
    * The Magic Happens.
    * @param  $data  [description]
    * @return [type] [description]
