@@ -4,7 +4,7 @@
  * Erus abstract plugin class
  */
 
-use Guzzle\Http\Client;
+use Guzzle\Http\Client as GuzzleClient;
 
 abstract class erusPlugin implements erusPluginInterface {
 

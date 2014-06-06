@@ -7,6 +7,8 @@
  *
  */
 
+use \Github\Client as GithubClient;
+
 class erusGithub extends erusPlugin {
 
   /**
@@ -14,7 +16,6 @@ class erusGithub extends erusPlugin {
    */
   public function __construct($settings) {
     parent::__construct($settings);
-    $this->set_endpoint('https://api.github.com/repos/{account}/{project}');
   }
 
   /**
@@ -26,20 +27,17 @@ class erusGithub extends erusPlugin {
 
     // Store data for later
     $this->set_update_data($data);
+    $this->authenticate_with_github();
 
     $client = $this->get_client();
-    $request = $client->get('releases');
-    $response = $request->send();
+    $github_data = $client->api('repo')->releases()->all($this->get_account(), $this->get_project_name());
 
-    $code = $response->getStatusCode();
+    $code = $client->getHttpClient()->getLastResponse()->getStatusCode();
 
     if ($code !== 200) {
       watchdog('erus', 'GitHub API returned with response code: ' . $code . ' for: ' . $this->get_project_name(), array(), WATCHDOG_ERROR);
       return false;
     }
-
-    // GitHub gave us back a response.
-    $github_data = $response->json();
 
     // If the github data is an array and not empty get the first element.
     if (!is_array($github_data) || empty($github_data)) {
@@ -67,20 +65,11 @@ class erusGithub extends erusPlugin {
    * @return [type] [description]
    */
   protected function get_client() {
-
-    $end = $this->get_endpoint();
-    $this->auth_user_with_github();
-    $headers = array('Accept' => 'application/vnd.github.v3+json');
-
-    $client = new Guzzle\Http\Client($end, array(
-      'account' => $this->get_account(),
-      'project' => $this->get_project_name(),
-    ),
-    array(
-      'headers' => $headers,
-    ));
-
-    return $client;
+    if (is_null($this->client)) {
+      $client = new GithubClient();
+      $this->set_client($client);
+    }
+    return $this->client;
   }
 
   /**
@@ -138,14 +127,12 @@ class erusGithub extends erusPlugin {
    * @return [array]           [the latest mared as non prerelease]
    */
   protected function get_latest_release($releases) {
-
     foreach ($releases as $i => $release) {
       if ($release['draft'] == TRUE || $release['prerelease'] == TRUE) {
         continue;
       }
       return $release;
     }
-
   }
 
   /**
@@ -173,13 +160,18 @@ class erusGithub extends erusPlugin {
   }
 
   /**
-   * Returns authentication credentials for GH
+   * [authenticate_with_github description]
    * @return [type] [description]
    */
-  protected function get_auth_credentials() {
-
+  protected function authenticate_with_github() {
+    $client = $this->get_client();
+    $settings = variable_get('erus_github.com', array());
+    if (empty($settings['username'])) {
+      return;
+    }
+    $client->authenticate($settings['username'], $settings['password'], GithubClient::AUTH_HTTP_PASSWORD);
+    $this->set_client($client);
   }
-
 
 
 }
