@@ -25,7 +25,7 @@ function erus_admin_config_administration_erus() {
     '#theme' => 'table',
     '#header' => $header,
     '#rows' => $rows,
-    '#empty' =>t('Your table is empty'),
+    '#empty' =>t('You have no plugins defined. Something is wrong.'),
   );
 
   $output .= drupal_render($table_element);
@@ -50,6 +50,11 @@ function erus_plugin_configuration_form($node, &$form_state) {
   drupal_set_title($plugin_name . ' ERUS plugin configuration form');
 
   $form = $plugin->get_configuration_form();
+
+  if (empty($form)) {
+    drupal_set_message('No configuration options for this plugin are available.');
+    return;
+  }
 
   $form['erus_hidden_plugin_name'] = array(
     '#type' => 'hidden',
