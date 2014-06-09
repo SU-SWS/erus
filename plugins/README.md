@@ -1,12 +1,12 @@
 # Plugins
 
-## Github.com
+### Github.com
 
-### Module Configuration
+#### Module Configuration
 
 Todo: write this...
 
-### GitHub Configuration
+#### GitHub Configuration
 
 Todo: update this...
 
