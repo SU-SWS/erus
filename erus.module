@@ -9,6 +9,7 @@
 
 // Ensure this gets loaded all the time.
 module_load_include('php', 'erus', 'includes/vendor/autoload');
+module_load_include('inc', 'erus', 'includes/ArchiverErusTar');
 
 /**
  * Implements hook_help().
@@ -112,11 +113,62 @@ function erus_update_status_alter(&$projects) {
 /**
  * Implements hook_verify_update_archive().
  */
-function erus_verify_update_archive($project, $archive_file, $directory) {}
+function erus_verify_update_archive($project, $archive_file, $directory) {
+
+  $errors = array();
+  if (!file_exists($directory)) {
+    $errors[] = t('The %directory does not exist.', array('%directory' => $directory));
+  }
+
+
+
+  // Add other checks on the archive integrity here.
+  return $errors;
+
+}
 
 // -----------------------------------------------------------------------------
 // END UPDATE MODULE API HOOKS
 // -----------------------------------------------------------------------------
+
+
+// -----------------------------------------------------------------------------
+// HOOKY HOOK
+// -----------------------------------------------------------------------------
+
+/**
+ * Implements hook_archiver_info().
+ */
+function erus_archiver_info() {
+
+  return array(
+    /*
+     *'tar' => array(
+     *  'class' => 'ArchiverTar',
+     *  'extensions' => array('tar', 'tar.gz', 'tar.bz2'),
+     */
+    'erus' => array(
+      'class' => 'ArchiverErusTar',
+      'extensions' => array('tar', 'tar.gz', 'tar.bz2'),
+    ),
+  );
+
+}
+
+/**
+ * Implements hook_archiver_info_alter().
+ */
+function erus_archiver_info_alter(&$info) {
+
+  // Not going to use this any more.
+  unset($info['tar']);
+
+}
+
+// -----------------------------------------------------------------------------
+// END HOOKY HOOK
+// -----------------------------------------------------------------------------
+
 
 /**
  * Checks info file settings for erus config

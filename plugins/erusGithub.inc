@@ -25,7 +25,7 @@ class erusGithub extends erusPlugin {
     );
 
     $form['password'] = array(
-      '#type' => 'textfield',
+      '#type' => 'password',
       '#title' => t('Password'),
       '#description' => t('Enter your GitHub password. WARNING: Password is stored in plain text.'),
     );
@@ -108,9 +108,21 @@ class erusGithub extends erusPlugin {
     $data['supported_majors'] =     implode(",", range(1,99));
     $data['default_major'] =        $this->parse_latest_major($latest_prod_tag);
 
+    // ASSETS
+    // https://github.com/SU-SWS/stanford_person/releases/download/7.x-3.0-alpha8/stanford_person-7.x-3.0-alpha8.tar.gz
+    // https://github.com/SU-SWS/stanford_person/archive/7.x-3.0-alpha8.tar.gz
+
     foreach ($releases as $index => $release) {
       $tag_name = $release['tag_name'];
       $tag_parts = explode('-', $tag_name);
+
+      // Create a url to the tarball
+      $download_link = "https://github.com/" . $this->get_account() . "/" . $this->get_project_name() . "/archive/" . $release['name'] . ".tar.gz";
+
+      // If there is an asset use that one.
+      if (isset($release['assets'][0])) {
+        $download_link = "https://github.com/" . $this->get_account() . "/" . $this->get_project_name() . "/releases/download/" . $release['name'] . "/" . $release['assets'][0]['name'];
+      }
 
       $data['releases'][$tag_name] =  array(
         'name' => $update_data['name'] . ' ' . $tag_name,
@@ -118,14 +130,15 @@ class erusGithub extends erusPlugin {
         'tag' => $tag_name,
         'version_major' => $this->parse_latest_major($tag_name),
         'version_patch' => 0,
-        'version_extra' => ($release['prerelease']) ? 'dev' : $tag_parts[2],
+        'version_extra' => ($release['prerelease']) ? 'dev' : @$tag_parts[2],
         'status' => 'published',
         'release_link' => $release['html_url'],
-        'download_link' => $release['tarball_url'],
+//        'download_link' => $release['tarball_url'],
+        'download_link' => $download_link,
         //'date' => strtotime($release['published_at']), // when the release was published.
         'date' => strtotime($release['created_at']), // when the tag was created
         'mdhash' => md5($release['url']), // just making this stuff up.
-        'filesize' => isset($release['assets'][0]) ? $release['assets'][0]->size : 0,
+        'filesize' => isset($release['assets'][0]) ? $release['assets'][0]['size'] : 0,
         'files' => "\n  \n  \n  ",
         'terms' => array('Release type' => array('Bug fixes')),
       );
