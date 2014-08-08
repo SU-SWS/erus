@@ -11,13 +11,13 @@ order to obtain update status information for custom work.
 By default ERUS will pick up any module that uses the project status url option
 in the .info file of the module or feature.
 
-	project status url[] = 'http://www.example.com'
+	project status url = 'http://www.example.com'
 
 ERUS module will attempt to gather information from the update status url in order to check the external service. ERUS comes with a built in github.com plugin. All
 you would need to add to your features that are stored on github is the path
 to the github project page. EG: for ERUS
 
-	project status url[] = 'https://github.com/SU-SWS/erus'
+	project status url = 'https://github.com/SU-SWS/erus'
 
 
 You may also add specific configuration settings for each of your modules and
