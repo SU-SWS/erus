@@ -40,6 +40,11 @@ class erusGithub extends erusPlugin {
    */
   public function process($data) {
 
+    // Go old or go home.
+    if (!isset($data['info']['datestamp'])) {
+      $data['info']['datestamp'] = 0;
+    }
+
     // Store data for later
     $this->set_update_data($data);
     $this->authenticate_with_github();
@@ -64,6 +69,7 @@ class erusGithub extends erusPlugin {
     $available = $this->map_data($releases);
     // Sanitize the status of the data from the original call
     $this->sanitize_info_data($data);
+
     // Allow update module to do its magic.
     update_calculate_project_update_status($this->get_project_name(), $data, $available);
 
@@ -95,8 +101,11 @@ class erusGithub extends erusPlugin {
   protected function map_data($releases) {
     $update_data = $this->get_update_data();
     $data = $this->get_default_update_status_available_data_array();
+
     $latest_release = $this->get_latest_release($releases);
-    $latest_prod_tag = !empty($latest_release['tag_name']) ? $latest_release['tag_name'] : '';
+    $dev_release = $this->get_latest_dev_release($releases);
+
+    $latest_prod_tag = !empty($latest_release['tag_name']) ? $latest_release['tag_name'] : $dev_release["tag_name"];
 
     $data['title'] =                $update_data['info']['name'];
     $data['short_name'] =           $update_data['name'];
@@ -107,10 +116,9 @@ class erusGithub extends erusPlugin {
     $data['recommended_major'] =    $this->parse_latest_major($latest_prod_tag);
     $data['supported_majors'] =     implode(",", range(1,99));
     $data['default_major'] =        $this->parse_latest_major($latest_prod_tag);
+//    $data['latest_version'] =       $dev_release['tag_name'];
+//    $data['dev_version'] =          $this->parse_latest_major($latest_prod_tag);
 
-    // ASSETS
-    // https://github.com/SU-SWS/stanford_person/releases/download/7.x-3.0-alpha8/stanford_person-7.x-3.0-alpha8.tar.gz
-    // https://github.com/SU-SWS/stanford_person/archive/7.x-3.0-alpha8.tar.gz
 
     foreach ($releases as $index => $release) {
       $tag_name = $release['tag_name'];
@@ -129,38 +137,106 @@ class erusGithub extends erusPlugin {
         'version' => $tag_name,
         'tag' => $tag_name,
         'version_major' => $this->parse_latest_major($tag_name),
-        'version_patch' => 0,
-        'version_extra' => ($release['prerelease']) ? 'dev' : @$tag_parts[2],
+        'version_patch' => $this->parse_latest_minor($tag_name),
+        'version_extra' => @$tag_parts[2],
         'status' => 'published',
         'release_link' => $release['html_url'],
-//        'download_link' => $release['tarball_url'],
         'download_link' => $download_link,
-        //'date' => strtotime($release['published_at']), // when the release was published.
-        'date' => strtotime($release['created_at']), // when the tag was created
+        'date' => strtotime($release['published_at']), // when the release was published.
+        // 'date' => strtotime($release['created_at']), // when the tag was created
         'mdhash' => md5($release['url']), // just making this stuff up.
         'filesize' => isset($release['assets'][0]) ? $release['assets'][0]['size'] : 0,
         'files' => "\n  \n  \n  ",
-        'terms' => array('Release type' => array('Bug fixes')),
+        'terms' => $this->parse_release_terms($release['body']),
       );
 
     }
 
+    // sort by name so that the list shows up as:
+    // 7.x-1.1-alpha1
+    // 7.x-1.0
+    // 7.x-1.0-beta11
+    // 7.x-1.0-beta10
+    // 7.x-1.0-beta9
+
+    $keys = array_keys($data['releases']);
+
+    uasort($keys, function($a, $b) {
+      if ($a == $b) {
+        return 0;
+      }
+      $a = str_replace('7.x-', '', $a);
+      $b = str_replace('7.x-', '', $b);
+
+      return version_compare($a, $b, '>') ? -1 : 1;
+      }
+    );
+    $keys = array_flip($keys);
+    $data['releases'] = array_merge($keys, $data['releases']);
     return $data;
   }
+
+  /**
+   * Look for "Release type:" in the body of a release for tag information.
+   * Tags should be a comma separated list
+   * eg: Release type: Bug fixes, New features, Security update
+   * @param  string $string [description]
+   * @return [type]         [description]
+   */
+  protected function parse_release_terms($string = '') {
+    $terms = array('Release type' => array());
+
+    preg_match_all('/Release type:.*\n/', $string, $matches);
+    $found = array_pop($matches);
+
+    if (!empty($found)) {
+      $found = str_replace("Release type:", "", $found[0]);
+      $found = str_replace(", ", ",", $found);
+      $found = str_replace(" ,", ",", $found);
+      $found = trim($found);
+      $terms['Release type'] = explode(",", $found);
+    }
+    else {
+      $terms['Release type'] = array('Bug fixes');
+    }
+
+
+    return $terms;
+  }
+
 
   /**
    * Goes through the releases looking for a release that isnt marked as
    * a "pre-lease" in the github ui.
    * @param  [array] $releases [all of the releases from GH]
-   * @return [array]           [the latest mared as non prerelease]
+   * @return [array]           [the latest marked as non prerelease]
    */
   protected function get_latest_release($releases) {
+    $potentials = array();
+
     foreach ($releases as $i => $release) {
       if ($release['draft'] == TRUE || $release['prerelease'] == TRUE) {
         continue;
       }
-      return $release;
+      $potentials[$release['tag_name']] = $release;
     }
+
+    if (empty($potentials)) {
+      return FALSE;
+    }
+
+    // Silly ksort will put 7.x-1.0-alpha1 in front of 7.x-1.0
+    krsort($potentials);
+    $key = array_shift($potentials);
+
+    $parts = explode("-", $key["tag_name"]);
+    if (isset($potentials[$parts[0] . "-" . $parts[1]])) {
+      return $potentials[$parts[0] . "-" . $parts[1]];
+    }
+    else {
+      return $key;
+    }
+
   }
 
   /**

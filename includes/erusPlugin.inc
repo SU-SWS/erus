@@ -248,4 +248,17 @@ abstract class erusPlugin implements erusPluginInterface {
 
   }
 
+  /**
+   * [parse_latest_minor description]
+   * @param  [type] $tag_name [description]
+   * @return [type]           [description]
+   */
+  protected function parse_latest_minor($tag_name) {
+
+    $big_bits = explode("-",$tag_name);
+    $little_bits = explode(".", $big_bits[1]);
+    return $little_bits[1];
+
+  }
+
 }

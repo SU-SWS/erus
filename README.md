@@ -34,6 +34,12 @@ eg: for https://github.com/SU-SWS/stanford_person
 	erus[account] = SU-SWS
 	erus[project] = stanford_person
 
+## Plugins
+[GitHub](plugins/README.md)
+
+A plugin to connect with GitHub's release functionalty. See [plugin documentation](plugins/README.md)
+for more information.
+
 ## API
 
 see [erus.api.php](erus.api.php)
@@ -48,7 +54,7 @@ see [erus.api.php](erus.api.php)
 	* Alter existing plugin information
 	*/
 	hook_erus_plugin_info_alter()
-	 
+
 
 ## Example Plugin
 
