@@ -35,8 +35,7 @@ eg: for https://github.com/SU-SWS/stanford_person
 	erus[project] = stanford_person
 
 ## Plugins
-[GitHub](plugins/README.md)
-
+[GitHub](plugins/README.md)   
 A plugin to connect with GitHub's release functionalty. See [plugin documentation](plugins/README.md)
 for more information.
 
