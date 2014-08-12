@@ -44,16 +44,17 @@ the parser is case sensitive.
 
 *Release Types:*
 For release types, have one line of comma separated values.
-eg:
-Release type: Bug fixes, New features, Security update
+
+    eg:
+    Release type: Bug fixes, New features, Security update
 
 *MD5 Hash:*
 In order to support the 'drush up' command we will have to provide the md5 hash
 of the file ourselves. To enter the md5 hash of the file please provide one line
 that starts with 'md5:' and is followed by the hash
 
-eg:
-md5: 347e56d77fa524e5c5dc21d297dffd47
+    eg:
+    md5: 347e56d77fa524e5c5dc21d297dffd47
 
 If you provide your own asset you will need to provide the md5 hash up the
 uploaded file. If you do not provide an uploaded asset you will need to get the
