@@ -125,12 +125,16 @@ class erusGithub extends erusPlugin {
       $tag_parts = explode('-', $tag_name);
 
       // Create a url to the tarball
-      $download_link = "https://github.com/" . $this->get_account() . "/" . $this->get_project_name() . "/archive/" . $release['name'] . ".tar.gz";
+      $download_link = "https://github.com/" . $this->get_account() . "/" . $this->get_project_name() . "/archive/" . $release['tag_name'] . ".tar.gz";
 
       // If there is an asset use that one.
       if (isset($release['assets'][0])) {
-        $download_link = "https://github.com/" . $this->get_account() . "/" . $this->get_project_name() . "/releases/download/" . $release['name'] . "/" . $release['assets'][0]['name'];
+        $download_link = "https://github.com/" . $this->get_account() . "/" . $this->get_project_name() . "/releases/download/" . $release['tag_name'] . "/" . $release['assets'][0]['name'];
       }
+
+      // GH doesn't provide a checksum on files. We will have to provide it in
+      // the body.
+      $md5 = $this->parse_md5_checksum($release['body']);
 
       $data['releases'][$tag_name] =  array(
         'name' => $update_data['name'] . ' ' . $tag_name,
@@ -144,7 +148,7 @@ class erusGithub extends erusPlugin {
         'download_link' => $download_link,
         'date' => strtotime($release['published_at']), // when the release was published.
         // 'date' => strtotime($release['created_at']), // when the tag was created
-        'mdhash' => md5($release['url']), // just making this stuff up.
+        'mdhash' => !empty($md5) ? $md5 : md5($release['url']), // just making this stuff up.
         'filesize' => isset($release['assets'][0]) ? $release['assets'][0]['size'] : 0,
         'files' => "\n  \n  \n  ",
         'terms' => $this->parse_release_terms($release['body']),
@@ -202,6 +206,22 @@ class erusGithub extends erusPlugin {
 
 
     return $terms;
+  }
+
+  /**
+   * Parses out the md5 checksum value from the body of a release.
+   * This is needed for 'drush up' to work
+   * @param  string $string [description]
+   * @return [type]         [description]
+   */
+  protected function parse_md5_checksum($string = '') {
+    preg_match_all('/md5:.*\n/', $string, $matches);
+    $found = array_pop($matches);
+    if (!empty($found)) {
+      $md5 = str_replace("md5: ", "", $found[0]);
+      return trim($md5);
+    }
+    return FALSE;
   }
 
 
