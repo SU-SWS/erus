@@ -35,7 +35,7 @@ eg: for https://github.com/SU-SWS/stanford_person
 	erus[project] = stanford_person
 
 ## Plugins
-[GitHub](plugins/README.md)   
+[GitHub](plugins/README.md)
 A plugin to connect with GitHub's release functionalty. See [plugin documentation](plugins/README.md)
 for more information.
 
@@ -106,6 +106,18 @@ see [erus.api.php](erus.api.php)
 
 	}
 
+## DRUSH
+*WARNING* This module will break your 'drush up' command unless all used plugins provide a valid md5 checksum and the download file unpacks with the exact same name as the module.
+
+If your 'drush up' fails to validate md5 checksums or replaces module directories with invalid names you can use the included package-handler to remedy those ailments.
+
+	eg: drush up --package-handler=erus_wget
+
+By providing the --package-handler option you will be able to continue to use drush up.
+
+Also included in this module is a wrapper for the above. Simply use the drush eup command to accomplish the same thing.
+
+	eg: drush eup
 
 ## TODO
 
