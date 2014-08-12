@@ -61,6 +61,7 @@ uploaded file. If you do not provide an uploaded asset you will need to get the
 md5 hash of the 'tar.gz' download provided by github.
 
 To get an md5 hash of a file you will need to:
+
 1. Install md5 on your machine
 2. Download or create the archive file (tar.gz)
 3. Open up your terminal or console and navigate to the file
