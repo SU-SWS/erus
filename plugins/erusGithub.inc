@@ -18,16 +18,24 @@ class erusGithub extends erusPlugin {
   public function get_configuration_form() {
     $form = array();
 
+    $form['privateonly']['#markup'] = "<p>" . t('Entering a username and password is only required if you have private repositories') . ".</p>";
+
+    $description = 'Enter a GitHub password.';
+    if (!module_exists('encrypt')) {
+      drupal_set_message(t('It is recommended that you install the') . ' ' . l('encrypt', 'http://dgo.to/encrypt') . t(' module so that your password is not stored in plain text'), 'warning', FALSE);
+      $description .= " WARNING: Password is stored in plain text.";
+    }
+
     $form['username'] = array(
       '#type' => 'textfield',
       '#title' => t('Username'),
-      '#description' => t('Enter your GitHub username'),
+      '#description' => t('Enter a GitHub username'),
     );
 
     $form['password'] = array(
       '#type' => 'password',
       '#title' => t('Password'),
-      '#description' => t('Enter your GitHub password. WARNING: Password is stored in plain text.'),
+      '#description' => t($description),
     );
 
     return $form;
@@ -290,10 +298,19 @@ class erusGithub extends erusPlugin {
   protected function authenticate_with_github() {
     $client = $this->get_client();
     $settings = variable_get('erus_github.com', array());
+
     if (empty($settings['username'])) {
       return;
     }
-    $client->authenticate($settings['username'], $settings['password'], GithubClient::AUTH_HTTP_PASSWORD);
+
+    $password = $settings['password'];
+
+    // Only if the module exists.
+    if (module_exists('encrypt')) {
+      $password = decrypt($settings['password']);
+    }
+
+    $client->authenticate($settings['username'], $password, GithubClient::AUTH_HTTP_PASSWORD);
     $this->set_client($client);
   }
 

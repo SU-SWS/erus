@@ -71,6 +71,11 @@ function erus_plugin_configuration_form($node, &$form_state) {
 
   // Loop through the values.
   foreach ($values as $field_name => $value) {
+
+    if (module_exists('encrypt') && $form[$field_name]['#type'] == "password") {
+      $value = decrypt($value);
+    }
+
     $form[$field_name]['#default_value'] = $value;
   }
 
@@ -93,6 +98,15 @@ function erus_plugin_configuration_form_submit($form, $form_state) {
   // Quick sanitize
   foreach ($values as $key => $value) {
     $values[$key] = check_plain($value);
+  }
+
+  // If the encrypt module is available lets encrypt all password fields.
+  if (module_exists('encrypt')) {
+    foreach ($form as $k => $val) {
+      if ($val['#type'] == "password") {
+        $values[$k] = encrypt($values[$k]);
+      }
+    }
   }
 
   variable_set('erus_' . $plugin_name, $values);
