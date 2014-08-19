@@ -292,8 +292,7 @@ class erusGithub extends erusPlugin {
   }
 
   /**
-   * [authenticate_with_github description]
-   * @return [type] [description]
+   * Sends a username and password to authenticate (OAuth) with GH.
    */
   protected function authenticate_with_github() {
     $client = $this->get_client();

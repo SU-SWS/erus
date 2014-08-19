@@ -120,8 +120,6 @@ function erus_verify_update_archive($project, $archive_file, $directory) {
     $errors[] = t('The %directory does not exist.', array('%directory' => $directory));
   }
 
-
-
   // Add other checks on the archive integrity here.
   return $errors;
 

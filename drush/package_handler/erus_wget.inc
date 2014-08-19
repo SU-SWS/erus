@@ -2,6 +2,10 @@
 
 /**
  * @file Drush PM Wget extension
+ * This is pretty much a copy and paste of the wget package handler that comes
+ * from Drush. It has a few minor modifications so that it can support files
+ * that do not have a valid MD5 hash and/or have an archive that expands with
+ * a different name then the module it is updating.
  */
 
 /**
