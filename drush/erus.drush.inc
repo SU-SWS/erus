@@ -41,6 +41,13 @@ function erus_drush_help($section) {
  */
 function erus_drush_update() {
 
+  $version = drush_drupal_major_version();
+  if ($version < 6) {
+    drush_log("Your drush version is too old. Please update to version 6.", "error");
+    drush_user_abort();
+    return;
+  }
+
   drush_invoke_process('@self', 'pm-updatestatus');
 
   $continue = drush_confirm('Are you sure you want to continue with all updates?');
