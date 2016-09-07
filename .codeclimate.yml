@@ -24,3 +24,5 @@ exclude_paths:
 - "**.ds.inc"
 - "**.bean.inc"
 - "**.context.inc"
+- "**.strongarm.inc"
+- "stanford_toggle_block.features.field_base.inc"
