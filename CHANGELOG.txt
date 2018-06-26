@@ -1,6 +1,14 @@
 External Repository Update Status x.x-x.x, xxxx-xx-xx
 -----------------------------------------------------
 
+7.x-1.2-alpha2            2018-06-26
+------------------------------------
+- Adds composer.json
+
+7.x-1.2-alpha1            201?-??-??
+------------------------------------
+- Somebody forgot to add an update here. Shame them now!
+
 7.x-1.1                   2015-06-26
 ------------------------------------
 - Add check for drush version
